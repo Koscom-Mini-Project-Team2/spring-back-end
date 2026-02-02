@@ -72,10 +72,6 @@ public class EtfService {
 
         List<Etf> etfs = etfRepository.searchEtfs(fltRt, riskLevel);
 
-        String prompt = """
-                너를 소개해줘
-                """;
-
         EtfRecommendResponseDto dto = callGptWithRetry(buildRecommendPrompt(request, etfs), 10);
 
         System.out.println("TAG[DTO]: " + dto.toString());

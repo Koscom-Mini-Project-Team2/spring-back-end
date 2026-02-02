@@ -2,14 +2,18 @@ package koscom.mini_project.team2.team2.domain.etf.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.channel.ChannelOption;
 import jakarta.transaction.Transactional;
 import koscom.mini_project.team2.team2.domain.etf.dto.OpenAiResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ReactorClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import reactor.netty.http.client.HttpClient;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +35,14 @@ public class GptService {
 
     public GptService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        this.restClient = RestClient.builder().build();
+
+        HttpClient httpClient = HttpClient.create()
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10_000) // 연결 타임아웃
+                .responseTimeout(Duration.ofSeconds(60));
+
+        this.restClient = RestClient.builder()
+                .requestFactory(new ReactorClientHttpRequestFactory(httpClient))
+                .build();
     }
 
     public String callGpt(String prompt) {

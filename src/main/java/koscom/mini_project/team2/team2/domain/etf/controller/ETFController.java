@@ -34,12 +34,6 @@ public class ETFController {
                 .body(created);
     }
 
-//    @PostMapping("/recommend")
-//    public ResponseEntity<EtfRecommendResponse> recommend(@RequestBody EtfRecommendRequest request) {
-//        EtfRecommendResponse response = etfService.recommend(request);
-//        return ResponseEntity.ok(response);
-//    }
-
     @PostMapping("/recommend")
     public ResponseEntity<EtfRecommendResponseDto> recommend(@RequestBody EtfRecommendRequest request) {
         EtfRecommendResponseDto response = etfService.recommend(request);
