@@ -22,6 +22,7 @@ public class EtfService {
 
     public EtfResponse create(ETFCreateRequest request) {
         Etf etf = Etf.builder()
+                .name(request.name())
                 .fltRt(request.fltRt())
                 .riskLevel(request.riskLevel())
                 .category(request.category())
