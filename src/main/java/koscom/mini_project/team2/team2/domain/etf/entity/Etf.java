@@ -30,7 +30,8 @@ public class Etf {
     @Column
     private String category;
 
-    @Column
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String description;
 
 }
