@@ -10,4 +10,5 @@ public interface EtfNewsRepository extends JpaRepository<EtfNews, Long> {
     List<EtfNews> findByEtfIdAndAnalyzedFalseOrderByPublishedAtDesc(Long etfId);
     List<EtfNews> findByEtfIdOrderByPublishedAtDesc(Long etfId, Pageable pageable);
     boolean existsByEtfIdAndUrl(Long etfId, String url);
+    boolean existsByEtfIdAndTitle(Long etfId, String title);
 }

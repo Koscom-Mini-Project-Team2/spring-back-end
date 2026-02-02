@@ -7,6 +7,7 @@ import koscom.mini_project.team2.team2.domain.etf.repository.EtfRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,6 +24,7 @@ public class EtfComponentInitializer {
      * ETF 구성종목 초기 데이터 세팅
      * 애플리케이션 시작 시 자동 실행하려면 @PostConstruct 추가
      */
+    @Transactional
     public void initializeAllEtfComponents() {
         log.info("ETF 구성종목 초기화 시작");
 
