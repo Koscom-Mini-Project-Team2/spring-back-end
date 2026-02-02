@@ -19,6 +19,9 @@ public class Etf {
     private Long id;
 
     @Column
+    private String name;
+
+    @Column
     private Integer fltRt;
 
     @Column

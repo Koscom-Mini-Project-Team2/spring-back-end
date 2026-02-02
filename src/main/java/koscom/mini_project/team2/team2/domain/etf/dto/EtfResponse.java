@@ -4,13 +4,14 @@ import koscom.mini_project.team2.team2.domain.etf.entity.Etf;
 
 public record EtfResponse(
         Long id,
+        String name,
         Integer fltRt,
         Integer riskLevel,
         String category,
         String description
 ) {
     public static EtfResponse from(Etf etf) {
-        return new EtfResponse(etf.getId(), etf.getFltRt(),
+        return new EtfResponse(etf.getId(), etf.getName(), etf.getFltRt(),
                 etf.getRiskLevel(), etf.getCategory(), etf.getDescription());
     }
 }
