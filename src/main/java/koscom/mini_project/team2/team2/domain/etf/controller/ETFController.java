@@ -1,6 +1,8 @@
 package koscom.mini_project.team2.team2.domain.etf.controller;
 
 import koscom.mini_project.team2.team2.domain.etf.dto.ETFCreateRequest;
+import koscom.mini_project.team2.team2.domain.etf.dto.EtfRecommendRequest;
+import koscom.mini_project.team2.team2.domain.etf.dto.EtfRecommendResponseDto;
 import koscom.mini_project.team2.team2.domain.etf.dto.EtfResponse;
 import koscom.mini_project.team2.team2.domain.etf.service.EtfService;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,19 @@ public class ETFController {
         return ResponseEntity
                 .created(URI.create("/etf/" + created.id()))
                 .body(created);
+    }
+
+//    @PostMapping("/recommend")
+//    public ResponseEntity<EtfRecommendResponse> recommend(@RequestBody EtfRecommendRequest request) {
+//        EtfRecommendResponse response = etfService.recommend(request);
+//        return ResponseEntity.ok(response);
+//    }
+
+    @PostMapping("/recommend")
+    public ResponseEntity<EtfRecommendResponseDto> recommend(@RequestBody EtfRecommendRequest request) {
+        EtfRecommendResponseDto response = etfService.recommend(request);
+        return ResponseEntity.ok(response);
+
     }
 
     // Read one

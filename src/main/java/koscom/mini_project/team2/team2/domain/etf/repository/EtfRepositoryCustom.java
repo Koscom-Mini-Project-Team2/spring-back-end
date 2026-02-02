@@ -1,10 +1,11 @@
 package koscom.mini_project.team2.team2.domain.etf.repository;
 
 import koscom.mini_project.team2.team2.domain.etf.entity.Etf;
-import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface EtfRepository extends JpaRepository<Etf, Long>, EtfRepositoryCustom {
+public interface EtfRepositoryCustom {
+
+    List<Etf> searchEtfs(Integer fltRt, Integer riskLevel);
 
 }
