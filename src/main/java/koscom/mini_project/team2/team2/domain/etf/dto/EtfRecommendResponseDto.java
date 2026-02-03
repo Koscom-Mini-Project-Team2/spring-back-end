@@ -11,6 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EtfRecommendResponseDto {
+    private String investmentType;            // 투자 성향
     private String investmentProfile;            // 투자 성향
     private Integer etfRiskScore;                 // 0~100
     private Integer dividendScore;                // 0~100

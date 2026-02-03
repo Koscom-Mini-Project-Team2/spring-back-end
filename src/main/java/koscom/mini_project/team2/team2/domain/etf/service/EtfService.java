@@ -173,17 +173,19 @@ public class EtfService {
         sb.append("7) ⭐ etfs 내부의 stockList는 후보 ETF에 포함된 값을 그대로 복사하여 출력한다.\n\n");
 
         // ✅ 투자 성향 정의 가이드 (⭐ 추가)
-        sb.append("투자 성향(investmentProfile) 분류 가이드:\n");
+        sb.append("투자 성향 설명: investmentProfile (1~2줄 요약)\n");
+        sb.append("투자 성향(investmentType) 분류 가이드:\n");
         sb.append("- 안정형: 원금 보존과 변동성 최소화를 중시, etfRiskScore 0~30 수준\n");
         sb.append("- 안정추구형: 일부 위험 감수 가능하나 안정 우선, etfRiskScore 30~50 수준\n");
         sb.append("- 중립형: 위험과 수익의 균형을 추구, etfRiskScore 50~65 수준\n");
         sb.append("- 성장형: 장기 수익 극대화 목적, etfRiskScore 65~80 수준\n");
         sb.append("- 공격형: 높은 변동성을 감수하고 고수익 추구, etfRiskScore 80~100 수준\n");
-        sb.append("- investmentProfile에는 반드시 위 5개 중 하나의 문자열만 사용한다.\n\n");
+        sb.append("- investmentType에는 반드시 위 5개 중 하나의 문자열만 사용한다.\n\n");
 
         // ✅ 스키마 고정 (⭐ stockList 포함)
         sb.append("반환 JSON 스키마(이 형태 그대로):\n");
         sb.append("{\n");
+        sb.append("  \"investmentType\": \"STRING\",\n");
         sb.append("  \"investmentProfile\": \"STRING\",\n");
         sb.append("  \"etfRiskScore\": 0,\n");
         sb.append("  \"dividendScore\": 0,\n");
@@ -232,60 +234,6 @@ public class EtfService {
         sb.append("- 추천 ETF 5개는 서로 중복되지 않아야 한다.\n");
         sb.append("- 포트폴리오는 분산 원칙을 지키되, 사용자가 선택한 관심 테마/목적을 우선 반영한다.\n");
         sb.append("- 후보 목록의 description과 stockList를 활용하여 추천 이유를 구성하되, 광고성 문구는 금지한다.\n");
-
-        return sb.toString();
-    }
-
-
-    private String buildRecommendPrompt(EtfRecommendRequest request, List<Etf> candidates) {
-        StringBuilder sb = new StringBuilder();
-
-        String candidatesJson = toEtfCandidateJson(candidates);
-
-        sb.append("너는 금융 투자 추천 엔진이다.\n");
-        sb.append("아래 [사용자 서베이 응답]과 [후보 ETF 목록]을 기반으로, 후보 ETF 중에서만 정확히 5개 ETF를 추천하라.\n\n");
-
-        // ✅ 출력 강제: JSON ONLY
-        sb.append("출력 규칙(매우 중요):\n");
-        sb.append("1) 반드시 JSON만 출력한다. 설명/문장/코드블록/마크다운/따옴표 밖 텍스트를 절대 출력하지 마라.\n");
-        sb.append("2) JSON의 필드명은 아래 스키마와 EXACTLY 동일해야 한다.\n");
-        sb.append("3) 숫자 필드는 정수만 허용한다(소수 금지).\n");
-        sb.append("4) etfs는 반드시 5개이며, 후보 ETF 목록에 있는 객체만 그대로 포함한다(임의로 생성 금지).\n");
-        sb.append("5) portfolioWeights는 반드시 길이 5의 정수 리스트이고, 합은 정확히 100이어야 한다.\n");
-        sb.append("6) reasonSummary는 정확히 3줄(줄바꿈 2회 포함)로 작성한다.\n\n");
-
-        // ✅ 스키마 고정
-        sb.append("반환 JSON 스키마(이 형태 그대로):\n");
-        sb.append("{\n");
-        sb.append("  \"investmentProfile\": \"STRING\",\n");
-        sb.append("  \"etfRiskScore\": 0,\n");
-        sb.append("  \"dividendScore\": 0,\n");
-        sb.append("  \"expectedTotalReturn\": 0,\n");
-        sb.append("  \"portfolioWeights\": [0,0,0,0,0],\n");
-        sb.append("  \"etfs\": [\n");
-        sb.append("    {\"id\":0,\"name\":\"\",\"fltRt\":0,\"riskLevel\":0,\"category\":\"\",\"description\":\"\"}\n");
-        sb.append("  ],\n");
-        sb.append("  \"reasonSummary\": \"LINE1\\nLINE2\\nLINE3\"\n");
-        sb.append("}\n\n");
-
-        // ✅ 점수 가이드 (신뢰성)
-        sb.append("점수 산정 가이드:\n");
-        sb.append("- etfRiskScore(0~100): 사용자의 위험 감내 수준이 높을수록 높게, 보수적일수록 낮게 산정.\n");
-        sb.append("- dividendScore(0~100): 배당/현금흐름 선호가 강할수록 높게 산정.\n");
-        sb.append("- expectedTotalReturn: 추정 총 수익률을 정수로만 제시(예: 8). 과장 금지.\n\n");
-
-        // ✅ 입력 데이터
-        sb.append("[사용자 서베이 응답]\n");
-        sb.append("- 질의:\n");
-        appendQaList(sb, request.qaList());
-
-        sb.append("\n[후보 ETF 목록(JSON)]\n");
-        sb.append(candidatesJson);
-
-        sb.append("\n\n추가 제약:\n");
-        sb.append("- 추천 ETF 5개는 서로 중복되지 않아야 한다.\n");
-        sb.append("- 포트폴리오는 분산 원칙을 지키되, 사용자가 선택한 관심 테마/목적을 우선 반영한다.\n");
-        sb.append("- 후보 목록의 description을 활용하여 추천 이유를 구성하되, 광고성 문구는 금지한다.\n");
 
         return sb.toString();
     }
