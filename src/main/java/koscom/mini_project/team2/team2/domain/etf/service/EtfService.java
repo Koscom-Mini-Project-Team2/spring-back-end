@@ -78,9 +78,7 @@ public class EtfService {
 
         List<Etf> etfs = etfRepository.searchEtfs(fltRt, riskLevel);
 
-        EtfRecommendResponseDto dto = callGptWithRetry(buildRecommendPrompt(request, etfs), 10);
-
-        System.out.println("TAG[DTO]: " + dto.toString());
+        EtfRecommendResponseDto dto = callGptWithRetry(buildRecommendPrompt2(request, etfs), 10);
 
         return dto;
 
@@ -153,6 +151,82 @@ public class EtfService {
             입력 텍스트:
         """ + raw;
     }
+
+    private String buildRecommendPrompt2(EtfRecommendRequest request, List<Etf> candidates) {
+        StringBuilder sb = new StringBuilder();
+
+        String candidatesJson = toEtfCandidateJson(candidates);
+
+        System.out.println("TAG: " + candidatesJson);
+
+        sb.append("너는 금융 투자 추천 엔진이다.\n");
+        sb.append("아래 [사용자 서베이 응답]과 [후보 ETF 목록]을 기반으로, 후보 ETF 중에서만 정확히 5개 ETF를 추천하라.\n\n");
+
+        // ✅ 출력 강제: JSON ONLY
+        sb.append("출력 규칙(매우 중요):\n");
+        sb.append("1) 반드시 JSON만 출력한다. 설명/문장/코드블록/마크다운/따옴표 밖 텍스트를 절대 출력하지 마라.\n");
+        sb.append("2) JSON의 필드명은 아래 스키마와 EXACTLY 동일해야 한다.\n");
+        sb.append("3) 숫자 필드는 정수만 허용한다(소수 금지).\n");
+        sb.append("4) etfs는 반드시 5개이며, 후보 ETF 목록에 있는 객체만 그대로 포함한다(임의 생성/누락 금지).\n");
+        sb.append("5) portfolioWeights는 반드시 길이 5의 정수 리스트이고, 합은 정확히 100이어야 한다.\n");
+        sb.append("6) reasonSummary는 정확히 3줄(줄바꿈 2회 포함)로 작성한다.\n");
+        sb.append("7) ⭐ etfs 내부의 stockList는 후보 ETF에 포함된 값을 그대로 복사하여 출력한다.\n\n");
+
+        // ✅ 스키마 고정 (⭐ stockList 포함)
+        sb.append("반환 JSON 스키마(이 형태 그대로):\n");
+        sb.append("{\n");
+        sb.append("  \"investmentProfile\": \"STRING\",\n");
+        sb.append("  \"etfRiskScore\": 0,\n");
+        sb.append("  \"dividendScore\": 0,\n");
+        sb.append("  \"expectedTotalReturn\": 0,\n");
+        sb.append("  \"portfolioWeights\": [0,0,0,0,0],\n");
+        sb.append("  \"etfs\": [\n");
+        sb.append("    {\n");
+        sb.append("      \"id\": 0,\n");
+        sb.append("      \"name\": \"\",\n");
+        sb.append("      \"fltRt\": 0,\n");
+        sb.append("      \"riskLevel\": 0,\n");
+        sb.append("      \"category\": \"\",\n");
+        sb.append("      \"description\": \"\",\n");
+        sb.append("      \"stockList\": [\n");
+        sb.append("        {\"name\":\"\",\"cat\":\"\",\"cat_code\":0}\n");
+        sb.append("      ]\n");
+        sb.append("    }\n");
+        sb.append("  ],\n");
+        sb.append("  \"reasonSummary\": \"LINE1\\nLINE2\\nLINE3\"\n");
+        sb.append("}\n\n");
+
+        // ✅ 점수 가이드
+        sb.append("점수 산정 가이드:\n");
+        sb.append("- etfRiskScore(0~100): 사용자의 위험 감내 수준이 높을수록 높게 산정.\n");
+        sb.append("- dividendScore(0~100): 배당/현금흐름 선호가 강할수록 높게 산정.\n");
+        sb.append("- expectedTotalReturn: 추정 총 수익률을 정수로만 제시(예: 8). 과장 금지.\n\n");
+
+        // ✅ 입력 데이터
+        sb.append("[사용자 서베이 응답]\n");
+        sb.append("- 질의:\n");
+        appendQaList(sb, request.qaList());
+
+        sb.append("\n[후보 ETF 목록(JSON)]\n");
+        sb.append(candidatesJson);
+
+        // ⭐ stockList 구조 예시를 명시적으로 주입
+        sb.append("\n\n[stockList JSON 예시]\n");
+        sb.append("{\"stockList\":[");
+        sb.append("{\"name\":\"S&P 500 지수\",\"cat\":\"지수\",\"cat_code\":8},");
+        sb.append("{\"name\":\"Apple\",\"cat\":\"해외\",\"cat_code\":2},");
+        sb.append("{\"name\":\"Microsoft\",\"cat\":\"해외\",\"cat_code\":2},");
+        sb.append("{\"name\":\"Amazon.com\",\"cat\":\"해외\",\"cat_code\":2}");
+        sb.append("]}\n");
+
+        sb.append("\n추가 제약:\n");
+        sb.append("- 추천 ETF 5개는 서로 중복되지 않아야 한다.\n");
+        sb.append("- 포트폴리오는 분산 원칙을 지키되, 사용자가 선택한 관심 테마/목적을 우선 반영한다.\n");
+        sb.append("- 후보 목록의 description과 stockList를 활용하여 추천 이유를 구성하되, 광고성 문구는 금지한다.\n");
+
+        return sb.toString();
+    }
+
 
     private String buildRecommendPrompt(EtfRecommendRequest request, List<Etf> candidates) {
         StringBuilder sb = new StringBuilder();
