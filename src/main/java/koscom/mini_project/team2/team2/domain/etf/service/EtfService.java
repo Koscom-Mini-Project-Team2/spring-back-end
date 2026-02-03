@@ -172,6 +172,15 @@ public class EtfService {
         sb.append("6) reasonSummary는 정확히 3줄(줄바꿈 2회 포함)로 작성한다.\n");
         sb.append("7) ⭐ etfs 내부의 stockList는 후보 ETF에 포함된 값을 그대로 복사하여 출력한다.\n\n");
 
+        // ✅ 투자 성향 정의 가이드 (⭐ 추가)
+        sb.append("투자 성향(investmentProfile) 분류 가이드:\n");
+        sb.append("- 안정형: 원금 보존과 변동성 최소화를 중시, etfRiskScore 0~30 수준\n");
+        sb.append("- 안정추구형: 일부 위험 감수 가능하나 안정 우선, etfRiskScore 30~50 수준\n");
+        sb.append("- 중립형: 위험과 수익의 균형을 추구, etfRiskScore 50~65 수준\n");
+        sb.append("- 성장형: 장기 수익 극대화 목적, etfRiskScore 65~80 수준\n");
+        sb.append("- 공격형: 높은 변동성을 감수하고 고수익 추구, etfRiskScore 80~100 수준\n");
+        sb.append("- investmentProfile에는 반드시 위 5개 중 하나의 문자열만 사용한다.\n\n");
+
         // ✅ 스키마 고정 (⭐ stockList 포함)
         sb.append("반환 JSON 스키마(이 형태 그대로):\n");
         sb.append("{\n");
