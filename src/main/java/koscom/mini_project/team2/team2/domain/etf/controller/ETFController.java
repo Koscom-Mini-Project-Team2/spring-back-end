@@ -1,9 +1,6 @@
 package koscom.mini_project.team2.team2.domain.etf.controller;
 
-import koscom.mini_project.team2.team2.domain.etf.dto.ETFCreateRequest;
-import koscom.mini_project.team2.team2.domain.etf.dto.EtfRecommendRequest;
-import koscom.mini_project.team2.team2.domain.etf.dto.EtfRecommendResponseDto;
-import koscom.mini_project.team2.team2.domain.etf.dto.EtfResponse;
+import koscom.mini_project.team2.team2.domain.etf.dto.*;
 import koscom.mini_project.team2.team2.domain.etf.service.EtfService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +42,12 @@ public class ETFController {
     @GetMapping("/{id}")
     public ResponseEntity<EtfResponse> findById(@PathVariable Long id) {
         return ResponseEntity.ok(etfService.findById(id));
+    }
+
+    // Update one
+    @PatchMapping("/{id}")
+    public ResponseEntity<EtfResponse> update(@PathVariable Long id, @RequestBody EtfUpdateRequest request) {
+        return ResponseEntity.ok(etfService.update(id, request));
     }
 
     // Read all

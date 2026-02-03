@@ -1,7 +1,11 @@
 package koscom.mini_project.team2.team2.domain.etf.entity;
 
 import jakarta.persistence.*;
+import koscom.mini_project.team2.team2.config.StockListJsonConverter;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -31,5 +35,10 @@ public class Etf {
     @Lob
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Lob
+    @Column(name = "stock_list", columnDefinition = "TEXT")
+    @Convert(converter = StockListJsonConverter.class)
+    private List<Stock> stockList = new ArrayList<>();
 
 }

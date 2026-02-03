@@ -2,10 +2,7 @@ package koscom.mini_project.team2.team2.domain.etf.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
-import koscom.mini_project.team2.team2.domain.etf.dto.ETFCreateRequest;
-import koscom.mini_project.team2.team2.domain.etf.dto.EtfRecommendRequest;
-import koscom.mini_project.team2.team2.domain.etf.dto.EtfRecommendResponseDto;
-import koscom.mini_project.team2.team2.domain.etf.dto.EtfResponse;
+import koscom.mini_project.team2.team2.domain.etf.dto.*;
 import koscom.mini_project.team2.team2.domain.etf.entity.Etf;
 import koscom.mini_project.team2.team2.domain.etf.repository.EtfRepository;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +40,15 @@ public class EtfService {
     public EtfResponse findById(Long id) {
         Etf etf = etfRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Etf not found. id=" + id));
+        return EtfResponse.from(etf);
+    }
+
+    @Transactional
+    public EtfResponse update(Long id,  EtfUpdateRequest request) {
+        System.out.println("[TAG] : " + request);
+        Etf etf = etfRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Etf not found. id=" + id));
+        etf.setStockList(request.stockList());
         return EtfResponse.from(etf);
     }
 
@@ -210,7 +216,8 @@ public class EtfService {
                             e.getFltRt(),
                             e.getRiskLevel(),
                             e.getCategory(),
-                            e.getDescription()
+                            e.getDescription(),
+                            e.getStockList()
                     ))
                     .toList();
 
