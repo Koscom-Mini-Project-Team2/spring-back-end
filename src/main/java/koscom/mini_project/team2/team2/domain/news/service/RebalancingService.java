@@ -327,14 +327,8 @@ public class RebalancingService {
                     .build());
 
             if (recommendation.isRebalancingRequired()) {
-                String changeReason;
-                if (Math.abs(change) < 1.0) {
-                    changeReason = "유지";
-                } else if (change > 0) {
-                    changeReason = "비중 확대 권장";
-                } else {
-                    changeReason = "비중 축소 권장";
-                }
+                // ETF별 뉴스 분석 결과 찾기
+                String changeReason = generateChangeReason(etf, change, etfAnalyses, recommendation);
 
                 recommendedPortfolio.add(AllocationChangeDto.builder()
                         .etfId(etf.getId())
@@ -349,26 +343,52 @@ public class RebalancingService {
         }
 
         // 뉴스 근거
-        List<NewsEvidenceDto> newsEvidence = etfAnalyses.stream()
-                .flatMap(analysis -> analysis.getNewsList().stream()
-                        .limit(2)
-                        .map(news -> {
-                            String impact = "NEUTRAL";
-                            if (analysis.getAnalysis() != null && analysis.getAnalysis().isShouldAlert()) {
-                                impact = "NEGATIVE";
-                            }
+        List<NewsEvidenceDto> newsEvidence = new ArrayList<>();
 
-                            return NewsEvidenceDto.builder()
-                                    .etfId(analysis.getEtf().getId())
-                                    .etfName(analysis.getEtf().getName())
-                                    .newsTitle(news.getTitle())
-                                    .newsUrl(news.getUrl())
-                                    .publishedAt(news.getPublishedAt())
-                                    .impact(impact)
-                                    .summary(analysis.getAnalysis() != null ? analysis.getAnalysis().getReason() : "")
-                                    .build();
-                        }))
-                .collect(Collectors.toList());
+        log.info(">>> newsEvidence 생성 시작: etfAnalyses 크기 = {}", etfAnalyses.size());
+
+        for (EtfNewsAnalysis analysis : etfAnalyses) {
+            log.info(">>> ETF: {}, 뉴스 개수: {}",
+                    analysis.getEtf().getName(),
+                    analysis.getNewsList().size());
+
+            // 각 ETF의 최대 3개 뉴스만 추가
+            int newsCount = Math.min(3, analysis.getNewsList().size());
+
+            for (int i = 0; i < newsCount; i++) {
+                EtfNews news = analysis.getNewsList().get(i);
+
+                // impact 결정
+                String impact = "NEUTRAL";
+                if (analysis.getAnalysis() != null && analysis.getAnalysis().isShouldAlert()) {
+                    impact = "NEGATIVE";
+                }
+
+                // summary 결정
+                String summary = "";
+                if (analysis.getAnalysis() != null && analysis.getAnalysis().getReason() != null) {
+                    summary = analysis.getAnalysis().getReason();
+                } else {
+                    summary = news.getContent() != null ? news.getContent() : "관련 뉴스";
+                }
+
+                NewsEvidenceDto evidence = NewsEvidenceDto.builder()
+                        .etfId(analysis.getEtf().getId())
+                        .etfName(analysis.getEtf().getName())
+                        .newsTitle(news.getTitle())
+                        .newsUrl(news.getUrl())
+                        .publishedAt(news.getPublishedAt())
+                        .impact(impact)
+                        .summary(summary)
+                        .build();
+
+                newsEvidence.add(evidence);
+
+                log.info(">>> 뉴스 추가: {}", news.getTitle());
+            }
+        }
+
+        log.info(">>> newsEvidence 생성 완료: 총 {}건", newsEvidence.size());
 
         // 조언 문장 분리
         List<String> recommendations = new ArrayList<>();
@@ -393,6 +413,96 @@ public class RebalancingService {
                 .recommendations(recommendations)
                 .analyzedAt(java.time.LocalDateTime.now())
                 .build();
+    }
+
+    /**
+     * ETF별 비중 변경 이유 생성
+     */
+    private String generateChangeReason(
+            Etf etf,
+            double change,
+            List<EtfNewsAnalysis> etfAnalyses,
+            RebalancingRecommendation recommendation) {
+
+        // 해당 ETF의 뉴스 분석 찾기
+        EtfNewsAnalysis etfAnalysis = etfAnalyses.stream()
+                .filter(analysis -> analysis.getEtf().getId().equals(etf.getId()))
+                .findFirst()
+                .orElse(null);
+
+        String etfName = etf.getName();
+        String action = "";
+        String reason = "";
+
+        // 변동 크기 판단
+        if (Math.abs(change) < 1.0) {
+            return String.format("%s는 현재 시장 상황에서 적절한 비중을 유지하고 있어 조정이 필요하지 않아", etfName);
+        }
+
+        // 증가/감소 판단
+        if (change > 0) {
+            action = "늘렸어";
+        } else {
+            action = "줄였어";
+        }
+
+        // 이유 생성
+        if (etfAnalysis != null && etfAnalysis.getAnalysis() != null) {
+            String analysisReason = etfAnalysis.getAnalysis().getReason();
+
+            if (change > 0) {
+                // 비중 증가 - 긍정적 이유
+                if (analysisReason != null && !analysisReason.isEmpty()) {
+                    if (analysisReason.contains("상승") || analysisReason.contains("호재") ||
+                            analysisReason.contains("긍정") || analysisReason.contains("성장")) {
+                        reason = "긍정적인 시장 흐름과 성장 가능성";
+                    } else if (analysisReason.contains("안정") || analysisReason.contains("유지")) {
+                        reason = "안정적인 시장 환경";
+                    } else {
+                        reason = "포트폴리오 분산 강화";
+                    }
+                } else {
+                    reason = "리스크 분산 및 포트폴리오 안정화";
+                }
+            } else {
+                // 비중 감소 - 부정적 이유
+                if (analysisReason != null && !analysisReason.isEmpty()) {
+                    if (analysisReason.contains("하락") || analysisReason.contains("악재") ||
+                            analysisReason.contains("부정") || analysisReason.contains("위험")) {
+                        reason = "시장 불확실성과 하방 리스크";
+                    } else if (analysisReason.contains("과열") || analysisReason.contains("급등") ||
+                            analysisReason.contains("변동성")) {
+                        reason = "과열된 시장과 높은 변동성";
+                    } else if (analysisReason.contains("조정")) {
+                        reason = "조정 가능성과 리스크 관리";
+                    } else {
+                        reason = "과도한 비중으로 인한 리스크 증가";
+                    }
+                } else {
+                    reason = "포트폴리오 리밸런싱 필요";
+                }
+            }
+        } else {
+            // 뉴스 분석이 없는 경우 카테고리 기반 이유 생성
+            if (change > 0) {
+                if (etf.getCategory() != null && etf.getCategory().contains("해외")) {
+                    reason = "해외 분산투자 강화";
+                } else if (etf.getCategory() != null && etf.getCategory().contains("채권")) {
+                    reason = "안정 자산 비중 확대";
+                } else {
+                    reason = "포트폴리오 균형 조정";
+                }
+            } else {
+                if (etf.getCategory() != null && etf.getCategory().contains("국내")) {
+                    reason = "국내 시장 과도한 집중 완화";
+                } else {
+                    reason = "리스크 관리 및 조정";
+                }
+            }
+        }
+
+        // 최종 문장 생성
+        return String.format("%s를 %s한 이유로 비중을 %s", etfName, reason, action);
     }
 }
 
